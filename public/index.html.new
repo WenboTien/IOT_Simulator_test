@@ -1,0 +1,1786 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=0.3">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+    <title>Robot Maze Simulator</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="css/modern-business.css" rel="stylesheet">
+
+    <!-- Custom Fonts -->
+    <link href="font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <script type="text/javascript">
+        function zoom() {
+            document.body.style.zoom = "75%"
+        }
+    </script>
+    <style>
+        p {
+            text-indent: 25px;
+        }
+    </style>
+
+</head>
+
+<body onload="zoom()">
+    <!-- Header Carousel -->
+
+    <!-- Page Content -->
+    <div class="container">
+        <!-- Marketing Icons Section -->
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header" style="padding-left: 40px; padding-right: 40px;">
+                    ASU IOT Maze Simulator
+                </h1>
+
+                <!-- BEGIN MAZE CODE -->
+                <div style="padding-left: 40px; padding-right: 40px; position:relative; width:1450px; height:700px;">
+                    <canvas id="mazecanvas" style="z-index: 0; position: absolute; left:0px; top:0px; border: 10px solid black" width="1450" height="640">Can't load the simulator, because your browser doesn't support HTML5.</canvas>
+                    <canvas id="robot" style="z-index: 1; position: absolute; left: 0px; top: 0px;" width="1450" height="640"></canvas>
+                </div>
+
+
+                <!-- You can uncomment these buttons to manually call the turn animations
+				        <div>
+                 <a class="btn btn-default" onclick="turnRobotRightEvent()" style="width: 300px; margin-left:43%;">Turn Right</a>
+                 <a class="btn btn-default" onclick="turnRobotLeftEvent()" style="width: 300px; margin-left:43%;">Turn Left</a>
+                </div>
+				-->
+				<div class="row">
+					<div class="col-lg-12">
+						<p style="text-align: right;" id="testing"> </p>
+						<p id="testing2"> </p>
+						<p id="testing3"> </p>
+						<p id="testingTurning"> </p>
+					</div>
+				</div>
+                <div style="padding-left: 40px;">
+				<form style="" action="" id="arrowKeyMode" name="Arrow Key Mode">
+				<label for="arrowKeyMode"><h2>Arrow Key Mode</h2></label>
+				  <input type="radio" id="driveRadio" name="mode" value="" onclick="setDriveMode()" style="margin-left: 10px"> Move Robot  </input>
+				  <input type="radio" id="eraseRadio" name="mode" value="" onclick="setEraseMode()" style="margin-left: 10px"> Erase Wall  </input>
+				  <input type="radio" id="drawRadio" name="mode" value="" onclick="setDrawMode()" style="margin-left: 10px"> Draw Wall  </input>
+
+					<a class="btn btn-default" onclick="reset()" style="width: 120px; padding-right: 25px; margin-left: 600px">Reset Simulator</a>
+          <a class="btn btn-default" onclick="newStartAutoRight()" style="width: 120px; padding-left: 25px; padding-right: 25px;">Right Wall Follow</a>
+          <a class="btn btn-default" onclick="newStartAutoLeft()" style="width: 120px; padding-left: 25px;">Left Wall Follow</a>
+          <a class="btn btn-default" onclick="saveMazeImageToURL()">Save Maze</a>
+				</form>
+
+                </div>
+
+                <div style="padding-left: 40px; padding-right: 40px;">
+                  <h2>Implement Your Algorithm Here<a id="implementAlgorithmBtn" class="btn btn-default" onclick="toggleVisibility('implementAlgorithmDiv', 'implementAlgorithmBtn')">-</a></h2>
+                <div id="implementAlgorithmDiv" class="panel panel-default" style="padding-left: 40px; padding-right: 40px;">
+                    <a class="btn btn-default" onclick="addNewLine()" style="width: 150px; margin-left:0%;">Add a New Line</a>
+                    <a class="btn btn-default" onclick="removeLine()" style="width: 150px; margin-left:0%;">Remove a Line</a>
+                    <p></p>
+                    <form>
+                      Default:
+                      <select id="defaultBehavior">
+                        <option value = "autoForward()">Forward</option>
+                        <option value = "autoReverse()">Reverse</option>
+                        <option value = "autoLeft()">Left</option>
+                        <option value = "autoRight()">Right</option>
+                      </select>
+                      <!--Delayed Turn Movement:
+                      <input id="delayedMovementValue" placeholder="Enter an integer" type="number" value = 90>
+                      </input>-->
+                    </form>
+                    <a id="runAlgorithmBtn" class="btn btn-default" onclick="newStartAutoWithValues()" style="width: 75px; margin-left:0%;">Run</a>
+                </div>
+
+                <noscript>JavaScript is not enabled. To access simulator, you should enable it.</noscript>
+
+                <!-- IOT FUNCTIONS -->
+
+                <script>
+                    var speedUp = 0; //Speedup factor to accomodate various systems.
+                </script>
+                <script>
+                    // Maze game created by ProgramFOX; http://www.codeproject.com/Members/ProgramFOX
+                    // Licensed under CPOL: http://www.codeproject.com/info/cpol10.aspx
+
+                    // 425 (X), 3 (Y) RECTANGLE
+                    // 542 (center X), 122 (center Y) CIRCLE
+                    var canvas = document.getElementById("mazecanvas");
+                    var context = canvas.getContext("2d");
+
+                    // Start added variables
+                    var robotCanvas = document.getElementById("robot");
+                    var robotContext = robotCanvas.getContext("2d");
+                    var angle = 0; // current angle
+                    var rotationInterval; // for turning
+                    var currentRotationAngle; // for turning
+                    var maxRotationAngle; // for turning
+                    var interval = 10; // increase to speed up turn (must have property: 90 % interval == 0)
+                    var robotMiddleX; // at any point the robot's middle x coordinate
+                    var robotMiddleY; // at any point the robot's middle y coordinate
+                    // End added variables
+
+                    var currRectX = 1315;
+                    var currRectY = 380;
+                    var mazeWidth = 1450;
+                    var mazeHeight = 640;
+                    var intervalVar;
+                    var rHeight = 50;
+                    var rWidth = 30;
+                    var rTemp = 0;
+                    var mazeImg = new Image();
+                    mazeImg.crossorigin = "anonymous";
+                    mazeImg.src = "mazebold.jpg";
+
+                    var leftWheelPower = 0;
+                    var rightWheelPower = 0;
+                    var heading = 0;
+                    var accuLeft = 0;
+                    var accuRight = 0;
+                    var newX;
+                    var newY;
+                    var upDist;
+                    var downDist;
+                    var leftDist;
+                    var rightDist;
+                    var sensor1Type = -1;
+                    var sensor1ID = -1;
+                    var sensor2Type = -1;
+                    var sensor2ID = -1;
+                    var debugMode = true;
+                    var isConnectedWS = false;
+                    var autoModeRunning;
+
+                    // Draw the maze initially
+                    drawMazeAndRectangle(1290, 343);
+
+                    //Always ensure robot is drawn correctly.
+                    //**********************************************************
+                    // Reset/Init
+                    //**********************************************************
+                    function reset() {
+                        currRectX = 1315;
+                        currRectY = 380;
+                        mazeWidth = 1450;
+                        mazeHeight = 640;
+                        rHeight = 50;
+                        rWidth = 30;
+                        rTemp = 0;
+                        //mazeImg = new Image();
+                        //mazeImg.src = "mazebold.jpg"
+
+                        leftWheelPower = 0;
+                        rightWheelPower = 0;
+                        heading = 0;
+                        accuLeft = 0;
+                        accuRight = 0;
+                        newX = currRectX;
+                        newY = currRectY;
+                        // cancel turning animation
+                        clearInterval(rotationInterval);
+
+                        // if robot reset point is black, do not reset the robot's position and angle
+                        var resetSpaceStatus = readPixelDataForReset();
+                        if(resetSpaceStatus == "whiteSquare") {
+                          // reset angle
+                          angle = 0;
+                          // draw AFTER angle
+                          drawRectangleToRobotCanvas();
+                        }
+
+                        // Remove distance readings
+                        while (document.getElementById("testing").hasChildNodes()) {
+                          document.getElementById("testing").removeChild(document.getElementById("testing").lastChild);
+                        }
+
+                        if (isConnectedWS) {
+                            closeWSConnection();
+                        }
+
+
+                        //End auto movement
+                        var highestTimeoutId = setTimeout(";");
+                        while (highestTimeoutId--) {
+                            clearTimeout(highestTimeoutId);
+                        }
+
+
+						document.getElementById("driveRadio").checked = true;
+						setDriveMode();
+
+            //measureDist(); // testing
+
+
+                    }
+
+
+                    //**********************************************************
+                    // Start of Drawing Functions
+                    //**********************************************************
+                    function drawMazeAndRectangle(rectX, rectY) {
+                        makeWhite(0, 0, canvas.width, canvas.height);
+                        mazeImg.onload = function() {
+                            context.drawImage(mazeImg, 0, 0);
+
+                            // Draws robot to the canvas at current (x,y) coordinate
+                            drawRectangleToRobotCanvas();
+                        };;
+                    }
+
+                    // This function draws the robot to the canvas using the rotate() function which allows the robot to be drawn at any angle [0,360]
+                    function drawRectangleToRobotCanvas() {
+                        var robot = document.getElementById("robot");
+                        var robotContext = robot.getContext("2d");
+
+                        // remove last rectangle drawing from canvas
+                        robotContext.clearRect(0, 0, canvas.width, canvas.height);
+
+                        ///*
+                        // testing
+                        //robotContext.strokeStyle = "red";
+                        //robotContext.beginPath();
+                        //robotContext.arc(currRectX,currRectY,10,0,2*Math.PI);
+                        //robotContext.stroke();
+                        //robotContext.fillStyle = "red";
+                        //robotContext.fill();
+                        // end testing
+                        //*/
+                        robotMiddleX = currRectX + rWidth / 2;
+                        robotMiddleY = currRectY + rHeight / 2;
+                        /* Important..Updates middleX,Y
+                        if(angle == -90 || angle == 270) {
+                          robotMiddleX = currRectX + (rHeight / 2);
+                          robotMiddleY = currRectY - (rWidth / 2);
+                        }
+                        else if(angle == -180 || angle == 180) {
+                          robotMiddleX = currRectX - (rWidth / 2);
+                          robotMiddleY = currRectY - (rHeight / 2);
+                        }
+                        else if(angle == -270 || angle == 90) {
+                          robotMiddleX = currRectX - (rHeight / 2);
+                          robotMiddleY = currRectY + (rWidth / 2);
+                        }
+                        else if(angle == -360 || angle == 0 || angle == 360) {
+                          robotMiddleX = currRectX + (rWidth / 2);
+                          robotMiddleY = currRectY + (rHeight / 2);
+                        }
+                        */
+                          /* // Draw Red Lasers
+                          robotContext.fillStyle = "red";
+                          // Draw laser for left sensor
+                          robotContext.fillRect(leftSensorX-leftDist, leftSensorY, leftDist, 1);
+
+                          // Draw laser for right sensor
+                          robotContext.fillRect(rightSensorX, rightSensorY, rightDist, 1);
+
+                          // Draw laser for front sensor
+                          robotContext.fillRect(frontSensorX, frontSensorY-upDist, 1, upDist);
+                          */
+
+                        robotContext.save();
+
+                        robotContext.translate(robotMiddleX, robotMiddleY);
+                        robotContext.rotate(angle * Math.PI / 180); // -90 turns left, 90 turns right. Note: angle is the current angle // WAS ROTATION ANGLE
+
+                        var robotTranslatedX = 0 - rWidth / 2;
+                        var robotTranslatedY = 0 - rHeight / 2;
+
+                        //robotContext.strokeStyle = "blue";//robotContext.fillStyle = "blue";
+                        //robotContext.strokeRect(robotTranslatedX, robotTranslatedY, rWidth, rHeight);
+                        robotContext.fillStyle = "blue";
+                        robotContext.fillRect(robotTranslatedX, robotTranslatedY, rWidth, rHeight);
+
+                        var greenx1 = robotTranslatedX;
+                        var greenx2 = robotTranslatedX;
+                        var redx1 = robotTranslatedX;
+                        var redx2 = robotTranslatedX;
+                        var greeny1 = robotTranslatedY;
+                        var greeny2 = robotTranslatedY;
+                        var redy1 = robotTranslatedY;
+                        var redy2 = robotTranslatedY;
+
+                        greenx2 = robotTranslatedX + 20;
+                        redx2 = robotTranslatedX + 20;
+                        redy1 = robotTranslatedY + 40;
+                        redy2 = robotTranslatedY + 40;
+
+                        robotContext.fillStyle = "#00FF00";
+                        robotContext.fillRect(greenx1, greeny1, 10, 10);
+                        robotContext.fillRect(greenx2, greeny2, 10, 10);
+
+                        robotContext.fillStyle = "#FF0000";
+                        robotContext.fillRect(redx1, redy1, 10, 10);
+                        robotContext.fillRect(redx2, redy2, 10, 10);
+
+                        robotContext.restore();
+
+                        /*
+                        // testing by drawing robot's middle coordinates
+                        robotContext.strokeStyle = "purple";
+                        robotContext.beginPath();
+                        robotContext.arc(robotMiddleX,robotMiddleY,10,0,2*Math.PI);
+                        robotContext.stroke();
+                        robotContext.fillStyle = "purple";
+                        robotContext.fill();
+                        // end testing
+                        */
+
+                        /*
+                        // draw leftSensorX, leftSensorY
+                        // testing
+                        robotContext.strokeStyle = "yellow";
+                        robotContext.beginPath();
+                        robotContext.arc(leftSensorX, leftSensorY,10,0,2*Math.PI);
+                        robotContext.stroke();
+                        robotContext.fillStyle = "yellow";
+                        robotContext.fill();
+                        // end testing
+
+                        // draw rightX, rightSensorY
+                        // testing
+                        robotContext.strokeStyle = "orange";
+                        robotContext.beginPath();
+                        robotContext.arc(rightSensorX, rightSensorY,10,0,2*Math.PI);
+                        robotContext.stroke();
+                        robotContext.fillStyle = "orange";
+                        robotContext.fill();
+                        // end testing
+
+                        // draw frontSensorX, frontSensorY
+                        // testing
+                        robotContext.strokeStyle = "blue";
+                        robotContext.beginPath();
+                        robotContext.arc(frontSensorX, frontSensorY,10,0,2*Math.PI);
+                        robotContext.stroke();
+                        robotContext.fillStyle = "blue";
+                        robotContext.fill();
+                        // end testing
+                        */
+                    }
+
+                    /* Functions for turning the robot right and left */
+                    function turnRobotRight() {
+                        currentRotationAngle += interval;
+                        if (currentRotationAngle > maxRotationAngle) {
+                          clearInterval(rotationInterval);
+                          return;
+                        }
+
+                        // remove last rectangle drawing from canvas
+                        robotContext.clearRect(0, 0, canvas.width, canvas.height);
+
+                        angle = (angle + interval) % 360;
+
+                        /* Important..
+                        // When the robot finishes turning need to update currRect coordinate so that front left corner of robot is always represented
+                        if(angle == -90 || angle == 270) {
+                          robotMiddleX = currRectX - (rWidth / 2);
+                          robotMiddleY = currRectY - (rHeight / 2);
+                          currRectX = robotMiddleX - (rHeight / 2);
+                          currRectY = robotMiddleY + (rWidth / 2);
+                        }
+                        else if(angle == -180 || angle == 180) {
+                          robotMiddleX = currRectX - (rHeight / 2);
+                          robotMiddleY = currRectY + (rWidth / 2);
+                          currRectX = robotMiddleX + (rWidth / 2);
+                          currRectY = robotMiddleY + (rHeight / 2);
+                        }
+                        else if(angle == -270 || angle == 90) {
+                          robotMiddleX = currRectX + (rWidth / 2);
+                          robotMiddleY = currRectY + (rHeight / 2);
+                          currRectX = robotMiddleX + (rHeight / 2);
+                          currRectY = robotMiddleY - (rWidth / 2);
+                        }
+                        else if(angle == -360 || angle == 0 || angle == 360) {
+                          robotMiddleX = currRectX + (rHeight / 2);
+                          robotMiddleY = currRectY - (rWidth / 2);
+                          currRectX = robotMiddleX - (rWidth / 2);
+                          currRectY = robotMiddleY - (rHeight / 2);
+                        }
+                        */
+                        // draw new robot position to canvas
+                        drawRectangleToRobotCanvas();
+                    }
+
+                    function turnRobotRightEvent() {
+                        maxRotationAngle = 90;
+                        currentRotationAngle = 0;
+                        rotationInterval = setInterval(turnRobotRight, 10); // 10 ms is lowest value allowed by setInterval
+                    }
+
+                    function turnRobotLeftEvent() {
+                        if(angle == 0) {
+                          angle = 360;
+                        }
+                        maxRotationAngle = -90;
+                        currentRotationAngle = 0;
+                        rotationInterval = setInterval(turnRobotLeft, 10); // 10 ms is lowest value allowed by setInterval
+                    }
+
+                    function turnRobotLeft() {
+                        currentRotationAngle -= interval;
+                        if (currentRotationAngle < maxRotationAngle) {
+                            clearInterval(rotationInterval);
+                            return;
+                        }
+
+                        // remove last rectangle drawing from canvas
+                        robotContext.clearRect(0, 0, canvas.width, canvas.height);
+
+                        angle = (angle - interval) % 360;
+
+                        /* Important..
+                        // When the robot finishes turning need to update currRect coordinate so that front left corner of robot is always represented
+                        if(angle == -90 || angle == 270) {
+                          robotMiddleX = currRectX + (rWidth / 2);
+                          robotMiddleY = currRectY + (rHeight / 2);
+                          currRectX = robotMiddleX - (rHeight / 2);
+                          currRectY = robotMiddleY + (rWidth / 2);
+                        }
+                        else if(angle == -180 || angle == 180) {
+                          robotMiddleX = currRectX + (rHeight / 2);
+                          robotMiddleY = currRectY - (rWidth / 2);
+                          currRectX = robotMiddleX + (rWidth / 2);
+                          currRectY = robotMiddleY + (rHeight / 2);
+                        }
+                        else if(angle == -270 || angle == 90) {
+                          robotMiddleX = currRectX - (rWidth / 2);
+                          robotMiddleY = currRectY - (rHeight / 2);
+                          currRectX = robotMiddleX + (rHeight / 2);
+                          currRectY = robotMiddleY - (rWidth / 2);
+                        }
+                        else if(angle == -360 || angle == 0 || angle == 360) {
+                          robotMiddleX = currRectX - (rHeight / 2);
+                          robotMiddleY = currRectY + (rWidth / 2);
+                          currRectX = robotMiddleX - (rWidth/2);
+                          currRectY = robotMiddleY - (rHeight/2);
+                        }
+                        */
+                        // draw new robot position to canvas
+                        drawRectangleToRobotCanvas();
+                    }
+
+                    function drawRectangle(x, y, style) {
+
+                        makeWhite(currRectX, currRectY, rWidth, rHeight);
+                        currRectX = x;
+                        currRectY = y;
+                        context.beginPath();
+                        context.rect(x, y, rWidth, rHeight);
+                        context.closePath();
+
+                        var greenx1 = x;
+                        var greenx2 = x;
+                        var redx1 = x;
+                        var redx2 = x;
+                        var greeny1 = y;
+                        var greeny2 = y;
+                        var redy1 = y;
+                        var redy2 = y;
+                        if (heading == 0) {
+                            greenx2 = x + 35;
+                            redx2 = x + 35;
+                            redy1 = y + 65;
+                            redy2 = y + 65;
+                        } else if (heading == 1) { //facing left
+                            redx1 = x + 65;
+                            redx2 = x + 65;
+                            greeny2 = y + 35;
+                            redy2 = y + 35;
+                        } else if (heading == 2) { //facing left
+                            greenx2 = x + 35;
+                            redx2 = x + 35;
+                            greeny1 = y + 65;
+                            greeny2 = y + 65;
+                        } else if (heading == 3) { //facing left
+                            greenx1 = x + 65;
+                            greenx2 = x + 65;
+                            greeny2 = y + 35;
+                            redy2 = y + 35;
+                        }
+
+
+                        context.rect(x, y, rWidth, rHeight);
+
+                        context.fillStyle = "#0000FF";
+                        context.fillRect(x, y, rWidth, rHeight);
+
+                        context.fillStyle = "#00FF00";
+                        context.fillRect(greenx1, greeny1, 15, 15);
+                        context.fillRect(greenx2, greeny2, 15, 15);
+
+                        context.fillStyle = "#FF0000";
+                        context.fillRect(redx1, redy1, 15, 15);
+                        context.fillRect(redx2, redy2, 15, 15);
+                    }
+
+                    function makeWhite(x, y, w, h) {
+                        context.beginPath();
+                        context.rect(x, y, w, h);
+                        context.closePath();
+                        context.fillStyle = "white";
+                        context.fill();
+                    }
+
+                    function swapDim() {
+                        var headingAngle;
+
+                        switch (heading) {
+                            case 0: // up
+                                headingAngle = 0; // up
+                                break;
+                            case 1: // left
+                                headingAngle = 270; // left
+                                break;
+                            case 2: // down
+                                headingAngle = 180; // down
+                                break;
+                            case 3: // right
+                                headingAngle = 90; // right
+                                break;
+                        }
+
+
+                        var difference = headingAngle - angle;
+                        difference = difference % 360;
+
+                        if (difference == -90 || difference == 270) {
+                            // turn left
+                            turnRobotLeftEvent();
+                        } else if (difference == 90 || difference == -270) {
+                            // turn right
+                            turnRobotRightEvent();
+                        }
+
+                        drawRectangleToRobotCanvas();
+                    }
+                    //**********************************************************
+                    // End of Drawing Functions
+                    //**********************************************************
+
+                    //**********************************************************
+                    // Start of Movement Functions
+                    //**********************************************************
+                    function measureDist() {
+                        var countUp = currRectY;
+                        var countDown = currRectY;
+                        var countLeft = currRectX;
+                        var countRight = currRectX;
+                        var findDistance = 9001;
+                        upDist = 0;
+                        downDist = 0;
+                        leftDist = 0;
+                        rightDist = 0;
+
+                          //up
+                          while (findDistance != 0) {
+                              findDistance = canMoveTo(currRectX, countUp);
+                              countUp = countUp - 10;
+                          } //find wall
+                          while (findDistance == 0) {
+                              findDistance = canMoveTo(currRectX, countUp);
+                              countUp++;
+                          } //move probe 1 px away from wall
+
+                          upDist = currRectY - countUp - 1;
+                          findDistance = 9001;
+
+                          //down
+                          while (findDistance != 0) {
+                              findDistance = canMoveTo(currRectX, countDown);
+                              countDown = countDown + 10;
+                          }
+                          while (findDistance == 0) {
+                              findDistance = canMoveTo(currRectX, countDown);
+                              countDown--;
+                          }
+                          findDistance = 9001;
+                          downDist = countDown - currRectY - 1;
+
+                          //left
+                          while (findDistance != 0) {
+                              findDistance = canMoveTo(countLeft, currRectY);
+                              countLeft = countLeft - 10;
+                          }
+                          while (findDistance == 0) {
+                              findDistance = canMoveTo(countLeft, currRectY);
+                              countLeft++;
+                          }
+                          findDistance = 9001;
+                          leftDist = currRectX - countLeft - 1;
+
+                          //right
+                          while (findDistance != 0) {
+                              findDistance = canMoveTo(countRight, currRectY);
+                              countRight = countRight + 10;
+                          }
+                          while (findDistance == 0) {
+                              findDistance = canMoveTo(countRight, currRectY);
+                              countRight--;
+                          }
+							
+                          rightDist = countRight - currRectX - 1;
+
+                        // displays four distance values below maze
+                        showSensorValues();
+                    }
+
+
+                    function moveUp() {
+                        newX = currRectX;
+                        newY = currRectY - distanceToMove;
+
+                        if (upDist >= distanceToMove) {
+                            currRectX = newX;
+                            currRectY = newY;
+                            drawRectangleToRobotCanvas();
+
+                        } else if (upDist < distanceToMove) {
+                            currRectX = newX;
+                            currRectY = newY + distanceToMove;
+                            drawRectangleToRobotCanvas();
+                        }
+
+                        measureDist();
+                    }
+
+                    function moveDown() {
+                        newX = currRectX;
+                        newY = currRectY + distanceToMove;
+
+                        if (downDist >= distanceToMove) {
+                            currRectX = newX;
+                            currRectY = newY;
+                            drawRectangleToRobotCanvas();
+                        } else if (downDist < distanceToMove) {
+                            currRectX = newX;
+                            currRectY = newY - distanceToMove;
+                            drawRectangleToRobotCanvas();
+                        }
+                        measureDist();
+                    }
+
+                    function moveLeft() {
+                        newX = currRectX - distanceToMove;
+                        newY = currRectY;
+                        if (leftDist >= distanceToMove) {
+                            currRectX = newX;
+                            currRectY = newY;
+                            drawRectangleToRobotCanvas();
+                        } else if (leftDist < distanceToMove) {
+                            currRectX = newX + distanceToMove;
+                            currRectY = newY;
+                            drawRectangleToRobotCanvas();
+                        }
+                        measureDist();
+                    }
+
+                    function moveRight() {
+                        newX = currRectX + distanceToMove;
+                        newY = currRectY;
+                        if (rightDist >= distanceToMove) {
+                            currRectX = newX;
+                            currRectY = newY;
+                            drawRectangleToRobotCanvas();
+                        } else if (rightDist < distanceToMove) {
+                            currRectX = newX - distanceToMove;
+                            currRectY = newY;
+                            drawRectangleToRobotCanvas();
+                        }
+                        measureDist();
+                    }
+
+                    function canMoveTo(destX, destY) {
+                        var imgData = context.getImageData(destX, destY, rWidth, rHeight);
+                        var data = imgData.data;
+                        var canMove = 1; // 1 means: the rectangle can move
+                        if (destX >= 0 && destX <= mazeWidth - rWidth && destY >= 0 && destY <= mazeHeight - rHeight) {
+                            for (var i = 0; i < 4 * rHeight * rWidth; i += 4) {
+                                if (data[i] <= 45 && data[i + 1] <= 45 && data[i + 2] <= 45) { // black
+                                    canMove = 0; // 0 means: the rectangle can't move
+                                    break;
+                                }
+                            }
+                        } else {
+                            canMove = 0;
+                        }
+                        return canMove;
+                    }
+
+                    /*function moveRect(e) {
+                        var movingAllowed;
+
+                        e = e || window.event;
+                        switch (e.keyCode) {
+                            case 38:   // arrow up key
+                            case 87: // W key
+                                newX = currRectX;
+                                newY = currRectY - 10;
+                                break;
+                            case 37: // arrow left key
+                            case 65: // A key
+                                moveLeft();
+                                break;
+                            case 40: // arrow down key
+                            case 83: // S key
+                                newX = currRectX;
+                                newY = currRectY + 10;
+                                break;
+                            case 39: // arrow right key
+                            case 68: // D key
+                                moveRight();
+                                break;
+                        }
+                        movingAllowed = canMoveTo(newX, newY);
+
+                        if (movingAllowed === 1) {// 1 means 'the rectangle can move'
+                            drawRectangle(newX, newY, "#0000FF");
+                            currRectX = newX;
+                            currRectY = newY;
+                        }
+                        else if (movingAllowed === 2) { // 2 means 'the rectangle reached the end point'
+                            clearInterval(intervalVar);
+                            makeWhite(0, 0, canvas.width, canvas.height);
+                            context.font = "40px Arial";
+                            context.fillStyle = "blue";
+                            context.textAlign = "center";
+                            context.textBaseline = "middle";
+                            context.fillText("Congratulations!", canvas.width / 2, canvas.height / 2);
+                            window.removeEventListener("keydown", moveRect, true);
+                        }
+                    } */
+                    //**********************************************************
+                    // End of Movement Functions
+                    //**********************************************************
+
+
+
+
+                    //**********************************************************
+                    // File Upload
+                    //**********************************************************
+                    function checkFilesUploaded() {
+                        var x = document.getElementById("myFile");
+                        var txt = "";
+                        if (isNaN(document.getElementById("XNewMazeCoordinate").value) || isNaN(document.getElementById("YNewMazeCoordinate").value) ||
+                            document.getElementById("YNewMazeCoordinate").value == '' || document.getElementById("XNewMazeCoordinate").value == '') {
+                            txt = "One of the two coordinates designated are not numbers."
+                        } else if ('files' in x) {
+                            if (x.files.length == 0) {
+                                txt = "Select one or more files.";
+                            } else {
+                                txt += "Your file has been uploaded: ";
+                                var file = x.files[0];
+                                mazeImg.src = URL.createObjectURL(file);
+                                canvas.width = mazeImg.width;
+                                //document.getElementById("upCanvWidth").value;
+                                canvas.height = mazeImg.height;
+                                //document.getElementById("upCanvHeight").value;
+
+                                if ('name' in file) {
+                                    txt += "name: " + file.name + "<br>";
+                                }
+                                if ('size' in file) {
+                                    txt += "size: " + file.size + " bytes <br>";
+                                }
+
+                                drawMazeAndRectangle(document.getElementById("XNewMazeCoordinate").value,
+                                    document.getElementById("YNewMazeCoordinate").value);
+                            }
+                        } else {
+                            if (x.value == "") {
+                                txt += "Select one or more files.";
+                            } else {
+                                txt += "The files property is not supported by your browser!";
+                                txt += "<br>The path of the selected file: " + x.value; // If the browser does not support the files property, it will return the path of the selected file instead.
+                            }
+                        }
+                        document.getElementById("myFileNames").innerHTML = txt;
+                    }
+
+                    function changeTemplate() {
+                        var baseCheck = document.getElementById("rbase").checked;
+                        var r1Check = document.getElementById("r1").checked;
+                        var r2Check = document.getElementById("r2").checked;
+                        var r3Check = document.getElementById("r3").checked;
+                        var rBlankCheck = document.getElementById("rBlank").checked;
+
+                        if (!baseCheck && !r1Check && !r2Check && !r3Check && !rBlankCheck) {
+                            document.getElementById("sampledownloadTxt").innerHTML = "Please select a maze then try again.";
+                        } else {
+                            if (baseCheck) {
+                                mazeImg.src = "mazebold.jpg";
+                                drawMazeAndRectangle(1290, 343);
+                            } else if (r1Check) {
+                                mazeImg.src = "SampMaze1.jpg";
+                                drawMazeAndRectangle(105, 471);
+                            } else if (r2Check) {
+                                mazeImg.src = "SampMaze2.jpg";
+                                drawMazeAndRectangle(1288, 338);
+                            } else if (r3Check) {
+                                mazeImg.src = "SampMaze3.jpg";
+                                drawMazeAndRectangle(1305, 369);
+                            }
+                            else if(rBlankCheck) {
+                              mazeImg.src = "BlankMaze.png";
+                              drawMazeAndRectangle(1290,343); // draw robot at (1290,343)
+                            }
+                            document.getElementById("sampledownloadTxt").innerHTML = "The maze has been changed.";
+                        }
+                    }
+
+                    function downloadFile() {
+                        window.open('SampleMazePack.zip');
+                    }
+
+
+
+                    //**********************************************************
+                    // End of File Upload
+                    //**********************************************************
+
+
+                    //drawMazeAndRectangle(1290, 343);
+                    //drawIndicatorCanvas(300,300);
+
+
+                    //window.addEventListener("keydown", moveRect, true);
+
+
+                    function moveRobotAuto() {
+                        if (heading == 0) {
+                            if (leftWheelPower > 0 && rightWheelPower > 0) { //Up
+                                moveUp();
+                            } else if (leftWheelPower < 0 && rightWheelPower < 0) {
+                                moveDown();
+                            }
+                        } else if (heading == 1) { //Left
+                            if (leftWheelPower > 0 && rightWheelPower > 0) {
+                                moveLeft();
+                            } else if (leftWheelPower < 0 && rightWheelPower < 0) {
+                                moveRight();
+                            }
+                        } else if (heading == 2) { //Down
+                            if (leftWheelPower > 0 && rightWheelPower > 0) {
+                                moveDown();
+                            } else if (leftWheelPower < 0 && rightWheelPower < 0) {
+                                moveUp();
+                            }
+                        } else if (heading == 3) { //Right
+                            if (leftWheelPower > 0 && rightWheelPower > 0) {
+                                moveRight();
+                            } else if (leftWheelPower < 0 && rightWheelPower < 0) {
+                                moveLeft();
+                            }
+                        }
+                    }
+
+
+					var defaultTurnMovement = 10;
+					function autoForward() {
+
+						leftWheelPower = 1;
+						rightWheelPower = leftWheelPower;
+						moveRobotAuto();
+						autoModeRunning = setTimeout(startAutoWithValues, 50-2*speedUp);
+
+					}
+
+					function autoReverse() {
+
+						leftWheelPower = -1;
+						rightWheelPower = leftWheelPower;
+						moveRobotAuto();
+						autoModeRunning = setTimeout(startAutoWithValues, 50-2*speedUp);
+
+					}
+
+					function autoStop() {
+
+						leftWheelPower = 0;
+						rightWheelPower = leftWheelPower;
+						moveRobotAuto();
+
+					}
+					function autoLeft() {
+
+						headingLeftTurn();
+						for (var i = 0; i < 10/distanceToMove; i++) {
+							leftWheelPower = 1;
+							rightWheelPower = leftWheelPower;
+							moveRobotAuto();
+						}
+						leftWheelPower = 0;
+						rightWheelPower = leftWheelPower;
+						autoModeRunning = setTimeout(startAutoWithValues, 200-10*speedUp);
+					}
+					function autoRight() {
+
+						headingRightTurn();
+						for (var i = 0; i < 10/distanceToMove; i++) {
+							leftWheelPower = 1;
+							rightWheelPower = leftWheelPower;
+							moveRobotAuto();
+						}
+						leftWheelPower = 0;
+						rightWheelPower = leftWheelPower;
+						autoModeRunning = setTimeout(startAutoWithValues, 200-10*speedUp);
+					}
+
+					function autoDelayedRight() {
+						headingRightTurn();
+						var i = 0;
+                                for (; i < defaultTurnMovement / distanceToMove; i++) {
+                                   setTimeout(moveRobotAuto,50*i);
+                                }
+
+                                autoModeRunning = setTimeout(startAutoWithValues, 50*i);
+					}
+
+					function autoDelayedLeft() {
+
+						headingLeftTurn();
+								var i = 0;
+                                for (; i < defaultTurnMovement / distanceToMove; i++) {
+                                   setTimeout(moveRobotAuto,50*i);
+                                }
+
+                                autoModeRunning = setTimeout(startAutoWithValues, 50*i);
+					}
+
+
+					function newStartAutoRight(){
+						reset();
+						setTimeout(function(){startAuto('right');},200);
+					}
+
+					function newStartAutoLeft(){
+						reset();
+						setTimeout(function(){startAuto('left');},200);
+					}
+
+					function newStartAutoWithValues(){
+						reset();
+						setTimeout(startAutoWithValues,200);
+					}
+
+                    function startAutoWithValues() {
+
+
+                        var leftSensor;
+                        var rightSensor;
+                        var forwardSensor;
+
+
+
+                        measureDist();
+                        var dists = new Array(upDist, leftDist, downDist, rightDist);
+
+                        forwardSensor = dists[heading];
+
+                        if (heading <= 2) {
+                            leftSensor = dists[heading + 1];
+                        } else if (heading == 3) {
+                            leftSensor = dists[0];
+                        }
+
+                        if (heading > 0) {
+                            rightSensor = dists[heading - 1];
+                        } else {
+                            rightSensor = dists[3];
+                        }
+
+
+
+                        //eval(document.getElementById("codeBox").value);
+						eval(getAlgorithmString());
+
+
+                    }
+
+                    function startAuto(sensorDirection) {
+                        var leftSensor;
+                        var rightSensor;
+                        var forwardSensor;
+                        var defaultTurnMovement = 90;
+						var forwardBuffer = 20;
+
+
+                        measureDist();
+                        var dists = new Array(upDist, leftDist, downDist, rightDist);
+
+                        forwardSensor = dists[heading];
+
+                        if (heading <= 2) {
+                            leftSensor = dists[heading + 1];
+                        } else if (heading == 3) {
+                            leftSensor = dists[0];
+                        }
+
+                        if (heading > 0) {
+                            rightSensor = dists[heading - 1];
+                        } else {
+                            rightSensor = dists[3];
+                        }
+
+
+
+                        if (forwardSensor > forwardBuffer) {
+                            leftWheelPower = 1; //Set wheel power for forward
+                            rightWheelPower = leftWheelPower;
+
+                            moveRobotAuto();
+                        }
+
+                        if (sensorDirection == "right") {
+
+                            if (forwardSensor <= forwardBuffer) {
+                                headingLeftTurn();
+
+                            }
+
+                            if (rightSensor > 100) {
+                                headingRightTurn();
+								var i = 0;
+                                for (; i < defaultTurnMovement / distanceToMove; i++) {
+                                    setTimeout(moveRobotAuto,50*i);
+                                }
+
+                                autoModeRunning = setTimeout(function() {
+                                    startAuto(sensorDirection)
+                                }, 50*i);
+
+
+                            } else {
+                                autoModeRunning = setTimeout(function() {
+                                    startAuto(sensorDirection)
+                                }, 50-2*speedUp);
+                            }
+
+                        } else if (sensorDirection == "left") {
+
+                            if (forwardSensor <= forwardBuffer) {
+                                headingRightTurn();
+                            }
+
+                            if (leftSensor > 100) {
+                                headingLeftTurn();
+								var i = 0;
+                                for (; i < defaultTurnMovement / distanceToMove; i++) {
+                                   setTimeout(moveRobotAuto,50*i);
+                                }
+
+                                autoModeRunning = setTimeout(function() {
+                                    startAuto(sensorDirection)
+                                }, 50*i);
+
+                            } else {
+                                autoModeRunning = setTimeout(function() {
+                                    startAuto(sensorDirection)
+                                }, 50-2*speedUp);
+                            }
+                        }
+
+
+                    }
+
+                    // This function can be attached to onclick property of button to hide/show div element
+                    function toggleVisibility(tagToToggle, buttonToChange) {
+                      // Get the node which is to be hidden or displayed
+                      var elementToToggle = document.getElementById(tagToToggle);
+
+                      // Change inner text to + if display is now 'none' or - if opposite
+                      var plusTextNode = document.createTextNode("+");
+                      var minusTextNode = document.createTextNode("-");
+
+                      if (elementToToggle.style.display === 'none') {
+                        elementToToggle.style.display = 'block';
+                        //document.getElementById(buttonToChange).value = '+';
+                        document.getElementById(buttonToChange).replaceChild(minusTextNode, document.getElementById(buttonToChange).childNodes[0]);
+                        console.log(document.getElementById(buttonToChange).value);
+                      } else {
+                        elementToToggle.style.display = 'none';
+                        //document.getElementById(buttonToChange).value = '-';
+                        document.getElementById(buttonToChange).replaceChild(plusTextNode, document.getElementById(buttonToChange).childNodes[0]);
+                        console.log(document.getElementById(buttonToChange).value);
+                      }
+                    }
+
+                    function showSensorValues() {
+                      var placeToBeAdded = document.getElementById("testing");
+
+                      var currentReadingsText = document.createElement("p");
+                      currentReadingsText.innerHTML = "Current distance readings: ";
+    	                var frontSensor = document.createElement("p");
+                      frontSensor.innerHTML = upDist + "&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp ";
+                      var sideSensors = document.createElement("p");
+                      sideSensors.innerHTML = leftDist + "&nbsp &nbsp &nbsp &nbsp &nbsp Angle: " + angle +  " &nbsp &nbsp &nbsp &nbsp &nbsp " + rightDist;
+                      var backSensor = document.createElement("p");
+                      backSensor.innerHTML = downDist + "&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp ";
+
+                      while (placeToBeAdded.hasChildNodes()) {
+                        placeToBeAdded.removeChild(placeToBeAdded.lastChild);
+                      }
+                      placeToBeAdded.appendChild(currentReadingsText);
+                      placeToBeAdded.appendChild(frontSensor);
+                      placeToBeAdded.appendChild(sideSensors);
+                      placeToBeAdded.appendChild(backSensor);
+                    }
+
+          function getMouseCoordinates(e) {
+            var boundingRectangle = canvas.getBoundingClientRect();
+            var mouseX = Math.round(e.clientX - boundingRectangle.left);
+            var mouseY = Math.round(e.clientY - boundingRectangle.top);
+            //document.getElementById("coordinates").innerHTML = "Coordinates: (" + mouseX + "," + mouseY + ")";
+          }
+
+					var lineNumber = 0;
+
+					function addNewLine() {
+                	// Make sure user creates a maximum of 8 lines
+                	lineNumber += 1;
+                    if(lineNumber > 8) {
+                    	return;
+                    }
+
+                    // Create form tag
+                    var form = document.createElement("form");
+                    form.setAttribute("id", "form".concat(lineNumber.toString()));
+
+                    var lineNumberAsString = lineNumber.toString();
+                    lineNumberAsString = lineNumberAsString.concat(". ");
+                    var numberText = document.createTextNode(lineNumberAsString);
+                    var ifText = document.createTextNode("If ");
+                    if(lineNumber > 1) {
+                      ifText = document.createTextNode("Else if ");
+                    }
+                    form.appendChild(numberText);
+                    form.appendChild(ifText);
+
+                    var sensorText = document.createTextNode(" sensor ");
+
+                    // Create select tag
+                    var select = document.createElement("select");
+                    select.setAttribute("id", "sensorChoice".concat(lineNumber.toString()));
+
+                    // Create options
+                    var firstOption = document.createElement("option");
+                    var firstOptionText = document.createTextNode("Forward");
+                    var secondOption = document.createElement("option");
+                    var secondOptionText = document.createTextNode("Right");
+                    var thirdOption = document.createElement("option");
+                    var thirdOptionText = document.createTextNode("Left");
+                    var fourthOption = document.createElement("option");
+                    var fourthOptionText = document.createTextNode("Left - Right");
+                    var fifthOption = document.createElement("option");
+                    var fifthOptionText = document.createTextNode("Right - Left");
+
+                    // Add text to options
+                    firstOption.appendChild(firstOptionText);
+					          firstOption.value = "forwardSensor";
+                    secondOption.appendChild(secondOptionText);
+					          secondOption.value = "rightSensor";
+                    thirdOption.appendChild(thirdOptionText);
+					          thirdOption.value = "leftSensor";
+                    fourthOption.appendChild(fourthOptionText);
+					fourthOption.value = "leftSensor-rightSensor";
+                    fifthOption.appendChild(fifthOptionText);
+					fifthOption.value = "rightSensor-leftSensor";
+
+                    // Add options to select tag
+                    select.appendChild(firstOption);
+                    select.appendChild(secondOption);
+                    select.appendChild(thirdOption);
+                    select.appendChild(fourthOption);
+                    select.appendChild(fifthOption);
+
+                    // Add select tag to form
+                    form.appendChild(select);
+
+                    // Create select tag
+                    var selectEquality = document.createElement("select");
+                    selectEquality.setAttribute("id", "equalityValue".concat(lineNumber.toString()));
+
+                    // Create options
+                    firstOption = document.createElement("option");
+                    firstOptionText = document.createTextNode("<=");
+                    secondOption = document.createElement("option");
+                    secondOptionText = document.createTextNode(">");
+
+                    // Add text to options
+                    firstOption.appendChild(firstOptionText);
+                    secondOption.appendChild(secondOptionText);
+
+
+                    // Add options to select tag
+                    selectEquality.appendChild(firstOption);
+                    selectEquality.appendChild(secondOption);
+
+
+                 	// Add sensor text to form
+                    form.appendChild(sensorText);
+
+                 	// Add <, <, == options
+                 	form.appendChild(selectEquality);
+
+                    // Create input tag
+                    var input = document.createElement("input");
+                    input.setAttribute("id", "sensorValue".concat(lineNumber.toString()));
+                    input.setAttribute("type", "number");
+                    input.setAttribute("placeholder", "Enter an Integer");
+					          input.setAttribute("value", "5")
+							  input.setAttribute("min","5");
+                    form.appendChild(input);
+
+                    // Show pixels as unit
+                    var pixelText = document.createTextNode(" pixels");
+                    form.appendChild(pixelText);
+
+                    // Create p tag
+                    var indent = document.createElement("p");
+					indent.setAttribute("id","indent".concat(lineNumber.toString()));
+                    var thenTurn = document.createTextNode("Then: ");
+                    indent.appendChild(thenTurn);
+                    form.appendChild(indent);
+
+                    // Create select tag
+                    select = document.createElement("select");
+                    select.setAttribute("id", "turnValue".concat(lineNumber.toString()));
+
+                    // Create options
+                    firstOption = document.createElement("option");
+                    firstOptionText = document.createTextNode("Turn Left");
+                    secondOption = document.createElement("option");
+                    secondOptionText = document.createTextNode("Turn Right");
+                    thirdOption = document.createElement("option");
+                    thirdOptionText = document.createTextNode("Move Forward");
+                    fourthOption = document.createElement("option");
+                    fourthOptionText = document.createTextNode("Delayed Turn Left");
+                    fifthOption = document.createElement("option");
+                    fifthOptionText = document.createTextNode("Delayed Turn Right");
+
+                    // Add text to options
+                    firstOption.appendChild(firstOptionText);
+					          firstOption.value = "autoLeft()";
+                    secondOption.appendChild(secondOptionText);
+					          secondOption.value = "autoRight()";
+                    thirdOption.appendChild(thirdOptionText);
+					          thirdOption.value = "autoForward()";
+                    fourthOption.appendChild(fourthOptionText);
+				            fourthOption.value = "autoDelayedLeft()";
+                    fifthOption.appendChild(fifthOptionText);
+					          fifthOption.value = "autoDelayedRight()";
+
+                    // Add options to select tag
+                    select.appendChild(firstOption);
+                    select.appendChild(secondOption);
+                    select.appendChild(thirdOption);
+                    select.appendChild(fourthOption);
+                    select.appendChild(fifthOption);
+
+                    // Add select tag to indent
+                    indent.appendChild(select);
+
+
+					delayedMovementInput = document.createElement("input");
+					delayedMovementInput.setAttribute("type","number");
+                    delayedMovementInput.setAttribute("id", "delayedMovementInput".concat(lineNumber.toString()));
+					delayedMovementInput.setAttribute("style","width:50px");
+					delayedMovementInput.setAttribute("placeholder","pixels")
+					delayedMovementInput.setAttribute("value","50")
+					delayedMovementInput.style.visibility = "hidden";
+
+					delayedMovementInputText = document.createTextNode(" ");
+					hiddenPxText = document.createTextNode(" ")
+					
+					indent.appendChild(delayedMovementInputText);
+					indent.appendChild(delayedMovementInput);
+					indent.appendChild(hiddenPxText);
+          
+					var thisLineNumber = lineNumber.toString();
+
+
+					select.onchange=function(){
+						if(select.selectedIndex=="3" || select.selectedIndex=="4"){
+						   document.getElementById("delayedMovementInput".concat(thisLineNumber)).style.visibility = "visible";
+						   document.getElementById("indent".concat(thisLineNumber)).childNodes[2].nodeValue = " by ";
+						   document.getElementById("indent".concat(thisLineNumber)).childNodes[4].nodeValue = " pixels";
+						}
+						else{
+							document.getElementById("delayedMovementInput".concat(thisLineNumber)).style.visibility = "hidden";
+							document.getElementById("indent".concat(thisLineNumber)).childNodes[2].nodeValue = "";
+							document.getElementById("indent".concat(thisLineNumber)).childNodes[4].nodeValue = "";
+						}
+					}
+
+
+                    // Add form to document
+                    var algorithmDivNode = document.getElementById("implementAlgorithmDiv");
+                    var runAlgorithmBtn = document.getElementById("runAlgorithmBtn");
+                    algorithmDivNode.insertBefore(form, runAlgorithmBtn);
+
+                    ////document.getElementById("implementAlgorithmDiv").appendChild(form);
+                }
+
+                function removeLine() {
+                  if(lineNumber <= 0) {
+                    return;
+                  }
+
+                  document.getElementById("form".concat(lineNumber.toString())).remove();
+
+                  lineNumber--;
+                }
+
+                // This function takes the current maze and saves it to an URL where it can be saved to local hard disk
+                function saveMazeImageToURL() {
+                  var maze = document.getElementById('mazecanvas');
+                  var dataURL = maze.toDataURL();
+                  console.log(dataURL);
+                  var imageWindow = window.open(dataURL, '_blank');
+                  if (!imageWindow) {
+                    alert('Please allow popups for this website');
+                  }
+                }
+
+
+				function setDriveMode(){
+					if(enterMode == false){
+						mazeContext.fillStyle = "#FFFFFF";
+						mazeContext.fillRect(drawX-1, drawY-1, mazeSquareWidth+2, mazeSquareHeight+2);
+					}
+					drawingMode = false;
+				}
+				function setDrawMode(){
+					enterMode = true;
+					drawMazeWall();
+				}
+				function setEraseMode(){
+					enterMode = false;
+					drawMazeWall();
+				}
+
+                /* begin maze drawing changes */
+                var drawX;
+                var drawY;
+                var drawingMode = false;
+                var enterMode = false;
+                var mazeSquareHeight = 24;
+                var mazeSquareWidth = 24;
+				var maze = document.getElementById("mazecanvas");
+				var mazeContext = maze.getContext("2d");
+                function drawMazeWall() {
+
+				if(drawingMode == false){ //Don't draw red box again
+					  drawingMode = true;
+            var xMiddleOffset = (mazecanvas.width / 2) % mazeSquareWidth;
+					  drawX = (mazecanvas.width / 2) - xMiddleOffset //drawX = 710;
+					  var yMiddleOffset = (mazecanvas.height / 2) % mazeSquareHeight;
+            drawY = (mazecanvas.height / 2) - yMiddleOffset; //drawY = 290;
+					 if(enterMode == true){
+						mazeContext.fillStyle = "#000000";
+						mazeContext.fillRect(drawX, drawY, mazeSquareWidth, mazeSquareHeight);
+					 }
+					 else if(enterMode == false){
+						mazeContext.strokeStyle = "#FF0000";
+						mazeContext.strokeRect(drawX, drawY, mazeSquareWidth, mazeSquareHeight);
+					 }
+					}
+				else if (drawingMode == true && enterMode == true){
+					mazeContext.fillStyle = "#FFFFFF";
+					mazeContext.fillRect(drawX-1, drawY-1, mazeSquareWidth+2, mazeSquareHeight+2);
+					mazeContext.fillStyle = "#000000";
+					mazeContext.fillRect(drawX, drawY, mazeSquareWidth, mazeSquareHeight);
+
+				}
+				else if(drawingMode == true && enterMode == false){
+					mazeContext.fillStyle = "#FFFFFF";
+					mazeContext.fillRect(drawX-1, drawY-1, mazeSquareWidth+2, mazeSquareHeight+2);
+					mazeContext.strokeStyle = "#FF0000";
+					  mazeContext.strokeRect(drawX, drawY, mazeSquareWidth, mazeSquareHeight);
+				}
+
+
+
+
+
+				}
+                function readPixelDataForReset() {
+                  var maze = document.getElementById("mazecanvas");
+                  var mazeContext = maze.getContext("2d");
+
+                  var imageData = mazeContext.getImageData(currRectX, currRectY, rWidth, rHeight);
+                  var dataAsArray = imageData.data;
+
+                  var countBlack = 0;
+                  var countWhite = 0;
+
+                  for (var i = 0; i < dataAsArray.length; i++) {
+                    if(dataAsArray[i] > 0) {
+                      countWhite += 1;
+                    }
+                    else if(dataAsArray[i] == 0) {
+                      countBlack += 1;
+                    }
+                  }
+
+                  if(countBlack > 0) {
+                    return "blackSquare";
+                  }
+                  else {
+                    return "whiteSquare";
+                  }
+                }
+
+                function readPixelData() {
+                  var maze = document.getElementById("mazecanvas");
+                  var mazeContext = maze.getContext("2d");
+
+                  var imageData = mazeContext.getImageData(drawX, drawY, mazeSquareWidth, mazeSquareHeight);
+                  var dataAsArray = imageData.data;
+
+                  console.log(dataAsArray);
+
+                  var countBlack = 0;
+                  var countWhite = 0;
+
+                  for (var i = 0; i < dataAsArray.length; i++) {
+                    if(dataAsArray[i] > 0) {
+                      countWhite += 1;
+                    }
+                    else if(dataAsArray[i] == 0) {
+                      countBlack += 1;
+                    }
+                  }
+
+                  if(countBlack > countWhite) {
+                    return "blackSquare";
+                  }
+                  else {
+                    return "whiteSquare";
+                  }
+                }
+                /* end maze drawing changes */
+
+				function getAlgorithmString() {
+					var algorithmString = "";
+					if(lineNumber >= 1) {
+						algorithmString = algorithmString.concat("\nif (" + document.getElementById("sensorChoice1").options[document.getElementById("sensorChoice1").selectedIndex].value + " " + document.getElementById("equalityValue1").options[document.getElementById("equalityValue1").selectedIndex].text + " " + document.getElementById("sensorValue1").value + ") {" + "defaultTurnMovement = " + document.getElementById("delayedMovementInput1").value + "; " + document.getElementById("turnValue1").options[document.getElementById("turnValue1").selectedIndex].value + ";}")
+
+						for(var i = 2; i<= lineNumber; i++) {
+							var sensorChoice = document.getElementById("sensorChoice"+i);
+							var equalityValue = document.getElementById("equalityValue"+i);
+							var sensorValue = document.getElementById("sensorValue"+i);
+							var turnValue = document.getElementById("turnValue"+i);algorithmString = algorithmString.concat()
+							algorithmString = algorithmString.concat("\nelse if (" + sensorChoice.options[sensorChoice.selectedIndex].value + " " + equalityValue.options[equalityValue.selectedIndex].text + " " + sensorValue.value + ") {"+ "defaultTurnMovement = " + document.getElementById("delayedMovementInput" + i).value + "; " + turnValue.options[turnValue.selectedIndex].value + ";}")
+						}
+
+						algorithmString = algorithmString.concat("\nelse {" + document.getElementById("defaultBehavior").options[document.getElementById("defaultBehavior").selectedIndex].value + ";}");
+					}
+					else {
+						algorithmString = document.getElementById("defaultBehavior").options[document.getElementById("defaultBehavior").selectedIndex].value + ";"
+					}
+
+					return algorithmString;
+				}
+                </script>
+                <script>
+                    var distanceToMove = 5;
+                    var manualControlInterval;
+
+					window.addEventListener("keydown", function(e) {
+							// space and arrow keys
+							if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+								e.preventDefault();
+							}
+						}, false);
+
+                    document.onkeydown = function(e) {
+                        e = e || window.event;
+
+                        // added by Spencer
+                        if(drawingMode) {
+                          //console.log("Drawing mode");
+                          var maze = document.getElementById("mazecanvas");
+                          var mazeContext = maze.getContext("2d");
+                          // clear previous rectangle
+                          var previousSquare = readPixelData();
+                          console.log(previousSquare);
+						  if(enterMode == false){
+						  mazeContext.fillStyle = "#FFFFFF";
+                          mazeContext.fillRect(drawX-1, drawY-1, mazeSquareWidth+2, mazeSquareHeight+2);
+						  }
+
+                         /* if(previousSquare == 'whiteSquare') {
+                            mazeContext.fillStyle = "#FFFFFF";
+                            mazeContext.fillRect(drawX, drawY, mazeSquareWidth, mazeSquareHeight);
+                          }*/
+                          /*if(previousSquare == 'blackSquare') {
+                            mazeContext.fillStyle = "#000000";
+                            mazeContext.fillRect(drawX, drawY, mazeSquareWidth, mazeSquareHeight);
+                          }*/
+
+                          switch(e.keyCode) {
+                            case 13:
+
+                              //drawingMode = false;
+							  if(enterMode == false){
+								enterMode = true;
+							  }else {
+							  enterMode = false;
+							  }
+
+                              break;
+                            case 37: // left
+                              if(drawX >= mazeSquareWidth) {
+                                drawX -= mazeSquareWidth/4;
+                              }
+                              break;
+                            case 38: // up
+                              if(drawY >= mazeSquareHeight) {
+                                drawY -= mazeSquareHeight/4;
+                              }
+                              break;
+                            case 39: // right
+                              if((drawX + mazeSquareWidth) <= (mazecanvas.width - mazeSquareWidth)) {
+                                drawX += mazeSquareWidth/4;
+                              }
+                              break;
+                            case 40: // down
+                              if((drawY + mazeSquareHeight) <= (mazecanvas.height - mazeSquareHeight)) {
+                                drawY += mazeSquareHeight/4;
+                              }
+                              break;
+                          }
+                          if(enterMode) {
+                            var nextSquare = readPixelData();
+
+                            mazeContext.fillStyle = "#000000";
+
+                            mazeContext.fillRect(drawX, drawY, mazeSquareWidth, mazeSquareHeight);
+
+
+
+                          }
+                          else {
+							mazeContext.fillStyle = "#FFFFFF";
+                            mazeContext.fillRect(drawX, drawY, mazeSquareWidth, mazeSquareHeight);
+							mazeContext.strokeStyle = "#FF0000";
+							mazeContext.strokeRect(drawX, drawY, mazeSquareWidth, mazeSquareHeight);
+                          }
+                          return;
+                        }
+                        // end added by Spencer
+
+                        switch (e.which || e.keyCode) {
+                            case 37: // left
+								clearInterval(manualControlInterval);
+                                headingLeftTurn();
+                                leftWheelPower = 0;
+                                rightWheelPower = leftWheelPower;
+                                break;
+
+                            case 38: // up
+                                clearInterval(manualControlInterval);
+								if(leftWheelPower != 0 && rightWheelPower != 0){
+									leftWheelPower = 0;
+									rightWheelPower = leftWheelPower;
+								}
+								else{
+                                leftWheelPower = 1;
+                                rightWheelPower = leftWheelPower;
+								}
+                                manualControlInterval = setInterval(moveRobotAuto, 50);
+                                break;
+
+                            case 39: // right
+								clearInterval(manualControlInterval);
+                                headingRightTurn();
+                                leftWheelPower = 0;
+                                rightWheelPower = leftWheelPower;
+                                break;
+
+                            case 40: // down
+                                clearInterval(manualControlInterval);
+								if(leftWheelPower != 0 && rightWheelPower != 0){
+									leftWheelPower = 0;
+									rightWheelPower = leftWheelPower;
+								}
+								else{
+                                leftWheelPower = -1;
+                                rightWheelPower = leftWheelPower;
+								}
+                                manualControlInterval = setInterval(moveRobotAuto, 50);
+                                break;
+
+                            default:
+                                return; // exit this handler for other keys
+                        }
+                        e.preventDefault(); // prevent the default action (scroll / move caret)
+                    };
+                </script>
+                <script src="js/IOTFunctions.js">
+                </script>
+
+                <!-- END MAZE CODE -->
+            </div>
+
+            <div style="padding-left: 40px; padding-right: 40px;">
+              <h2>Setup VIPLE Connection <a id="setupConnectionBtn" class="btn btn-default" onclick="toggleVisibility('inputSensorValuesDiv', 'setupConnectionBtn')">-</a></h2>
+            </div>
+            <div id="inputSensorValuesDiv" style="padding-left: 40px; padding-right: 40px;">
+                <h4>*Optional section if you are not using sensors.*</h4>
+                <h4>Enter 'none' if you don't plan on using that sensor.</h4>
+                <h4>BE SURE TO CLICK THE 'Add/Update Sensors' BUTTON TO ENSURE THAT THE VALUES OF THE SENSORS ARE SET</h4>
+                <div class="panel panel-default">
+                    <input type="text" id="sensor1Txt" placeholder="ID of Sensor1">
+                    <select id="sensor1Select">
+                        <option>Ultrasonic Sensor</option>
+                        <option>Touch Sensor</option>
+                    </select>
+                    <select id="sensor1DirSelect">
+                        <option>Front</option>
+                        <option>Back</option>
+                        <option>Left</option>
+                        <option>Right</option>
+                    </select>
+                </div>
+                <div>
+                    <input type="text" id="sensor2Txt" placeholder="ID of Sensor2">
+                    <select id="sensor2Select">
+                        <option>Ultrasonic Sensor</option>
+                        <option>Touch Sensor</option>
+                    </select>
+                    <select id="sensor2DirSelect">
+                        <option>Front</option>
+                        <option>Back</option>
+                        <option>Left</option>
+                        <option>Right</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="speedSetting">Speed (0-10)</label>
+                    <input type="range" id="speedSetting" name="speed" min="0" max="10" value="0">
+                </div>
+                <div>
+                    <a class="btn btn-default" onclick="getSensorInfo()">Add/Update Sensors</a>
+                    <p id="sensorLbl"> </p>
+                </div>
+            </div>
+
+            <div style="padding-left: 40px; padding-right: 40px;">
+              <h2>Connect To VIPLE<a id="connectToVIPLEBtn" class="btn btn-default" onclick="toggleVisibility('connectToVipleDiv', 'connectToVIPLEBtn')">-</a></h2>
+            </div>
+            <div id="connectToVipleDiv" class="col-md-4" style="padding-left: 40px; padding-right: 40px;">
+                <div class="panel panel-default">
+                    <input type="text" id="ipTxt" value="localhost">
+                    <a class="btn btn-default" onclick="startServer()">Connect to ASU VIPLE (Websockets)</a>
+                    <a class="btn btn-default" onclick="closeWSConnection()">Disconnect from ASU VIPLE</a>
+                </div>
+            </div>
+
+            <div style="padding-left: 40px; padding-right: 40px;">
+              <h2>Select/Download Sample Maze<a id="sampleMazeBtn" class="btn btn-default" onclick="toggleVisibility('sampleMazeDiv', 'sampleMazeBtn')">-</a></h2>
+            </div>
+            <div id="sampleMazeDiv" style="padding-left: 40px; padding-right: 40px;">
+                <h4>Use the radio buttons to select a maze then press the "Select image as new maze" button in this section below</h4>
+                <form>
+                    <input type="radio" name="mazeselect" id="rbase"> <img border="0" src="mazebold.jpg" width="128" height="290"><br>
+                    <input type="radio" name="mazeselect" id="r1"> <img border="0" src="SampMaze1.jpg" width="128" height="290"><br>
+                    <input type="radio" name="mazeselect" id="r2"> <img border="0" src="SampMaze2.jpg" width="128" height="290"><br>
+                    <input type="radio" name="mazeselect" id="r3"><img border="0" src="SampMaze3.jpg" width="128" height="290"><br>
+                    <input type="radio" name="mazeselect" id="rBlank"> [Start with Blank Maze]<br>
+                </form>
+
+                <a class="btn btn-default" onclick="changeTemplate()">Select image as new maze</a>
+                <a class="btn btn-default" onclick="downloadFile()">Download all sample maze templates</a>
+                <p id="sampledownloadTxt"></p>
+            </div>
+
+            <div style="padding-left: 40px; padding-right: 40px;">
+              <h2>Upload Image for New Maze<a id="uploadMazeBtn" class="btn btn-default" onclick="toggleVisibility('uploadMazeDiv', 'uploadMazeBtn')">-</a></h2>
+            </div>
+            <div id="uploadMazeDiv" style="padding-left: 40px; padding-right: 40px;">
+                <p>
+                    <input type="file" id="myFile">
+                    <input type="text" id="XNewMazeCoordinate" placeholder="Desired starting X Coordinate">
+                    <input type="text" id="YNewMazeCoordinate" placeholder="Desired starting Y Coordinate">
+                </p>
+                <p>
+                    <input type="text" id="upCanvHeight" value="Height of uploaded image (pixels)">
+                    <input type="text" id="upCanvWidth" value="Width of uploaded image (pixels)">
+                </p>
+                <a class="btn btn-default" onclick="checkFilesUploaded()">Select image as new maze.</a>
+                <p id="myFileNames"></p>
+            </div>
+
+            <div style="padding-left: 40px; padding-right: 40px;">
+              <h2>Details / Readme: <a id="detailsBtn" class="btn btn-default" onclick="toggleVisibility('detailsDiv', 'detailsBtn')">-</a></h2>
+            </div>
+            <div id="detailsDiv" style="padding-left: 40px; padding-right: 40px;">
+                <h4>This has either been opened from VIPLE's "Start web simulator" or has been opened manually through your web browser's URL. In order to "Run" this simulator, you must connect to VIPLE or JSON transmitting program, starting a new "Web simulator" on VIPLE will not begin the execution of the robot's movement and measurements. Please follow the instructions carefully below.</h4>
+            </div>
+
+            <div style="padding-left: 40px; padding-right: 40px;">
+              <h2>Instructions: <a id="instructionsBtn" class="btn btn-default" onclick="toggleVisibility('instructionsDiv', 'instructionsBtn')">-</a></h2>
+            </div>
+            <div id="instructionsDiv" style="padding-left: 40px; padding-right: 40px;">
+                <h4>1.) Open ASU VIPLE and ensure that your "Robot" service block has 8124 as its TCP port. </h4>
+                <h4>2.) Run your ASU VIPLE Program (green triangle button) and ensure that the window "RunWindow" is displaying that says "Running Program". Keep the RunWindow open during execution. </h4>
+                <h4>3.) Note: If you are not using any sensors, you do not need to fill in the fields or click the button "Add/Update Sensors".</h4>
+                <h4>3a.) If you are using sensors, input sensor ID, select what type of sensor it is, and where it located on the robot in the "Input Sensor Value" section. </h4>
+                <h4>3b.) If you are not using that sensor, enter "none" as the ID, then click the button "Add/Update Sensors". </h4>
+                <h4>4.) Ensure that your program is running in VIPLE </h4>
+                <h4>5.) To connect to VIPLE, In the "Connect To VIPLE" section: enter "localhost" for same computer, or your given IP address for another computer in the field above.</h4>
+                <h4>6.) Click the Connect to ASU VIPLE (Websockets) button.</h4>
+                <h4>Note: that motor "3" will be the universal left, motor "5" will be universal right motor for this simulator.</h4>
+                <h4>Advanced and experimental: You can also upload your own maze (walls must be black Red/Green/Blue = 0/0/0), do not use if you don't know what you're doing.</h4>
+            </div>
+
+
+
+
+        </div>
+        <!-- /.row -->
+
+
+        <!-- Footer -->
+        <footer style="padding-left: 40px; padding-right: 40px;">
+
+        </footer>
+
+    </div>
+    <!-- /.container -->
+
+    <!-- jQuery -->
+    <script src="js/jquery.js"></script>
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="js/bootstrap.min.js"></script>
+
+    <!-- Script to Activate the Carousel -->
+    <script>
+        $('.carousel').carousel({
+            interval: 5000 //changes the speed
+        })
+    </script>
+</body>
+
+
+</html>
