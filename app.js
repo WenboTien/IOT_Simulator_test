@@ -9,7 +9,7 @@ var index = require('./routes/index');
 var users = require('./routes/users');
 // var login = require('./routes/login');
 var mongoose = require('mongoose');
-mongoose.connect('mongodb://wenbo:123456@ds161823.mlab.com:61823/wenbo_t1');
+mongoose.connect('mongodb://admin:123456@35.163.104.90:27017/simulator_data');
 var operation = require('./schema/operation');
 var student = require('./schema/students');
 
